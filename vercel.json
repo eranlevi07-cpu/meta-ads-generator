@@ -1,0 +1,7 @@
+{
+  "version": 2,
+  "functions": {
+    "api/image-ai.js": { "maxDuration": 60 },
+    "api/pipeline.js": { "maxDuration": 60 }
+  }
+}

@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>מחולל מודעות Meta | AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0a12;
+      --surface: #12121e;
+      --surface2: #1a1a2e;
+      --border: rgba(120, 80, 255, 0.18);
+      --accent: #7c3aed;
+      --accent2: #2563eb;
+      --accent-glow: rgba(124, 58, 237, 0.35);
+      --text: #f0eeff;
+      --text-muted: #8b87b8;
+      --chip-bg: rgba(124, 58, 237, 0.12);
+      --chip-active: #7c3aed;
+      --success: #22c55e;
+      --radius: 14px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Heebo', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      direction: rtl;
+      overflow-x: hidden;
+    }
+
+    /* Background mesh */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 20% 10%, rgba(124,58,237,0.12) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 80% 80%, rgba(37,99,235,0.1) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 40px 20px 80px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Header */
+    header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    .logo-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(124,58,237,0.15);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      padding: 6px 18px;
+      font-size: 13px;
+      color: #a78bfa;
+      letter-spacing: 0.04em;
+      margin-bottom: 20px;
+    }
+
+    .logo-badge::before {
+      content: '';
+      width: 6px; height: 6px;
+      background: #a78bfa;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #a78bfa;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    h1 {
+      font-size: clamp(32px, 6vw, 52px);
+      font-weight: 900;
+      line-height: 1.1;
+      background: linear-gradient(135deg, #e0d7ff 0%, #7c3aed 50%, #2563eb 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 12px;
+    }
+
+    header p {
+      color: var(--text-muted);
+      font-size: 17px;
+      font-weight: 300;
+    }
+
+    /* Form card */
+    .form-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 36px;
+      box-shadow: 0 0 60px rgba(124,58,237,0.08);
+    }
+
+    .field {
+      margin-bottom: 28px;
+    }
+
+    label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      color: #c4b5fd;
+      margin-bottom: 10px;
+      letter-spacing: 0.02em;
+    }
+
+    textarea {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: 'Heebo', sans-serif;
+      font-size: 15px;
+      padding: 14px 16px;
+      resize: vertical;
+      min-height: 110px;
+      transition: border-color 0.2s;
+      direction: rtl;
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    textarea::placeholder { color: var(--text-muted); }
+
+    /* Chips */
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chip {
+      padding: 8px 16px;
+      border-radius: 100px;
+      background: var(--chip-bg);
+      border: 1px solid rgba(124,58,237,0.25);
+      color: var(--text-muted);
+      font-family: 'Heebo', sans-serif;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.18s;
+      user-select: none;
+    }
+
+    .chip:hover {
+      border-color: var(--accent);
+      color: var(--text);
+    }
+
+    .chip.active {
+      background: var(--chip-active);
+      border-color: var(--chip-active);
+      color: #fff;
+      font-weight: 600;
+      box-shadow: 0 0 16px rgba(124,58,237,0.4);
+    }
+
+    /* Select */
+    select {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: 'Heebo', sans-serif;
+      font-size: 15px;
+      padding: 13px 16px;
+      cursor: pointer;
+      transition: border-color 0.2s;
+      direction: rtl;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238b87b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: left 14px center;
+    }
+
+    select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    /* Two column row */
+    .row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 600px) {
+      .row-2 { grid-template-columns: 1fr; }
+      .form-card { padding: 24px; }
+    }
+
+    /* Submit button */
+    .btn-generate {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border: none;
+      border-radius: var(--radius);
+      color: #fff;
+      font-family: 'Heebo', sans-serif;
+      font-size: 17px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+      margin-top: 8px;
+      letter-spacing: 0.02em;
+    }
+
+    .btn-generate:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(124,58,237,0.45);
+    }
+
+    .btn-generate:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    .btn-generate:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .btn-generate .spinner {
+      display: none;
+      width: 20px; height: 20px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin: 0 auto;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .btn-generate.loading .btn-text { display: none; }
+    .btn-generate.loading .spinner { display: block; }
+
+    /* Results */
+    #results {
+      margin-top: 48px;
+    }
+
+    .results-title {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 24px;
+      color: #c4b5fd;
+    }
+
+    .ads-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .ad-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 28px;
+      position: relative;
+      overflow: hidden;
+      animation: fadeUp 0.4s ease both;
+    }
+
+    .ad-card::before {
+      content: '';
+      position: absolute;
+      top: 0; right: 0;
+      width: 200px; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent));
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .ad-card:nth-child(2) { animation-delay: 0.1s; }
+    .ad-card:nth-child(3) { animation-delay: 0.2s; }
+
+    .ad-number {
+      position: absolute;
+      top: 20px;
+      left: 24px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .ad-headline {
+      font-size: 20px;
+      font-weight: 800;
+      color: #e0d7ff;
+      margin-bottom: 12px;
+      line-height: 1.3;
+      padding-left: 60px;
+    }
+
+    .ad-primary-text {
+      font-size: 15px;
+      color: var(--text-muted);
+      line-height: 1.7;
+      margin-bottom: 16px;
+      white-space: pre-wrap;
+    }
+
+    .ad-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      padding-top: 16px;
+    }
+
+    .ad-description {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .ad-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(124,58,237,0.2);
+      border: 1px solid rgba(124,58,237,0.4);
+      border-radius: 8px;
+      padding: 7px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #a78bfa;
+    }
+
+    .copy-btn {
+      background: none;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      color: var(--text-muted);
+      font-family: 'Heebo', sans-serif;
+      font-size: 13px;
+      padding: 6px 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .copy-btn:hover {
+      border-color: var(--accent);
+      color: #a78bfa;
+    }
+
+    .copy-btn.copied {
+      border-color: var(--success);
+      color: var(--success);
+    }
+
+    .brand-icons {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .brand-icon {
+      width: 46px;
+      height: 46px;
+      border-radius: 12px;
+      border: 1px solid rgba(124,58,237,0.2);
+      background: rgba(255,255,255,0.04);
+      color: #c4b5fd;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      padding: 0;
+    }
+
+    .brand-icon img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .brand-icon.active,
+    .brand-icon:hover {
+      background: rgba(124,58,237,0.43);
+      border-color: var(--accent);
+      color: #fff;
+      box-shadow: 0 0 12px rgba(124,58,237,0.45);
+    }
+
+    /* Error */
+    .error-msg {
+      background: rgba(239,68,68,0.1);
+      border: 1px solid rgba(239,68,68,0.3);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      color: #fca5a5;
+      font-size: 15px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo-badge">AI · Meta Ads Generator</div>
+      <h1>מחולל מודעות Meta</h1>
+      <p>צור 3 מודעות מקצועיות לפייסבוק ואינסטגרם בשניות</p>
+    </header>
+
+    <div class="form-card">
+      <div class="field">
+        <label>בחר מותג</label>
+        <select id="brandSelect">
+          <option value='yomkef'>יום כיף (Yomkef)</option>
+          <option value='eran-pro'>ERAN-PRO</option>
+          <option value='xstream-bar'>XSTREAM BAR</option>
+          <option value='ptl'>PTL (Paulina)</option>
+          <option value='other'>אחר (חופשי)</option>
+        </select>
+      </div>
+
+      <div class="brand-icons" id="brandIcons"></div>
+
+      <div class="field">
+        <label>תיאור העסק</label>
+        <textarea id="businessDescription" placeholder="תאר את העסק שלך, המוצר או השירות. מה מייחד אותך? מה הערך שאתה מביא ללקוחות?"></textarea>
+      </div>
+
+      <div class="field">
+        <label>מטרות קמפיין</label>
+        <div class="chips" id="goalsChips">
+          <div class="chip" data-value="מכירות">מכירות</div>
+          <div class="chip" data-value="לידים">לידים</div>
+          <div class="chip" data-value="מודעות למותג">מודעות</div>
+          <div class="chip" data-value="תנועה לאתר">תנועה לאתר</div>
+          <div class="chip" data-value="מעורבות">מעורבות</div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>קהל יעד</label>
+        <div class="chips" id="audienceChips">
+          <div class="chip" data-value="גיל 18-25">18–25</div>
+          <div class="chip" data-value="גיל 25-35">25–35</div>
+          <div class="chip" data-value="גיל 35-50">35–50</div>
+          <div class="chip" data-value="גיל 50+">50+</div>
+          <div class="chip" data-value="גברים">גברים</div>
+          <div class="chip" data-value="נשים">נשים</div>
+          <div class="chip" data-value="בעלי עסקים">בעלי עסקים</div>
+          <div class="chip" data-value="הורים">הורים</div>
+        </div>
+      </div>
+
+      <div class="row-2">
+        <div class="field">
+          <label>תקציב יומי</label>
+          <select id="budget">
+            <option value="50₪ ליום">50₪ ליום</option>
+            <option value="100₪ ליום">100₪ ליום</option>
+            <option value="200₪ ליום" selected>200₪ ליום</option>
+            <option value="500₪ ליום">500₪ ליום</option>
+            <option value="1000₪+ ליום">1000₪+ ליום</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>טון המודעה</label>
+          <select id="tone">
+            <option value="מקצועי">מקצועי</option>
+            <option value="ידידותי" selected>ידידותי</option>
+            <option value="שנוני">שנוני</option>
+            <option value="רגשי">רגשי</option>
+            <option value="דחוף">דחוף</option>
+          </select>
+        </div>
+      </div>
+
+      <button class="btn-generate" id="generateBtn" onclick="generateAds()">
+        <span class="btn-text">✦ צור מודעות</span>
+        <span class="spinner"></span>
+      </button>
+      <button class="btn-generate" id="generatePipelineBtn" onclick="generateFullPipeline()" style="margin-top: 12px; background: linear-gradient(135deg, #22c55e, #16a34a);">
+        <span class="btn-text">✦ הפעל צינור תוכן מלא</span>
+        <span class="spinner"></span>
+      </button>
+    </div>
+
+    <div class="form-card" style="margin-top: 30px;">
+      <h2 style="margin-bottom: 16px; color:#a78bfa; font-size: 22px;">סוכן תוכן למנהלות רווחה</h2>
+
+      <div class="field">
+        <label>הקשר קבוצת Whatsapp</label>
+        <textarea id="hrGroupInfo" placeholder="דוגמא: קבוצה של מנהלות רווחה בחברות הייטק, מחפשות פעילויות גיבוש, מדריכים לתמריץ עובדים, והמלצות על מקומות פרטיים"></textarea>
+      </div>
+
+      <div class="field">
+        <label>סוג תוכן</label>
+        <select id="hrContentType">
+          <option value="מדריך למנהלות רווחה" selected>מדריך למנהלות רווחה</option>
+          <option value="מקום חדש לגיבוש">מקום חדש לגיבוש</option>
+          <option value="רעיונות פעילות מקוריים">רעיונות פעילות מקוריים</option>
+          <option value="תוכן כללי לפוסט ווטסאפ">תוכן כללי לפוסט ווטסאפ</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>טון</label>
+        <select id="hrTone">
+          <option value="מקצועי" selected>מקצועי</option>
+          <option value="ידידותי">ידידותי</option>
+          <option value="חם ומעודד">חם ומעודד</option>
+        </select>
+      </div>
+
+      <button class="btn-generate" id="generateHrBtn" onclick="generateHrContent()">
+        <span class="btn-text">✦ צור תוכן HR</span>
+        <span class="spinner"></span>
+      </button>
+    </div>
+
+    <div class="form-card" style="margin-top: 30px;">
+      <h2 style="margin-bottom: 16px; color:#a78bfa; font-size: 22px;">סוכן ניסוח תוכן (Rewriting Agent)</h2>
+
+      <div class="field">
+        <label>טקסט מקורי</label>
+        <textarea id="rewriteOriginalText" placeholder="הטקסט שאתה רוצה לנסח מחדש בגרסאות שונות"></textarea>
+      </div>
+
+      <div class="field">
+        <label>פלטפורמה יעד</label>
+        <select id="rewritePlatform">
+          <option value="instagram">Instagram</option>
+          <option value="facebook">Facebook</option>
+          <option value="linkedin">LinkedIn</option>
+          <option value="tiktok">TikTok</option>
+          <option value="whatsapp">WhatsApp</option>
+          <option value="telegram">Telegram</option>
+        </select>
+      </div>
+
+      <div class="row-2">
+        <div class="field">
+          <label>טון</label>
+          <select id="rewriteTone">
+            <option value="טבעי" selected>טבעי</option>
+            <option value="מקצועי">מקצועי</option>
+            <option value="חדשני">חדשני</option>
+            <option value="רגשי">רגשי</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>סגנון</label>
+          <select id="rewriteStyle">
+            <option value="קצר" selected>קצר</option>
+            <option value="בינוני">בינוני</option>
+            <option value="ארוך">ארוך</option>
+          </select>
+        </div>
+      </div>
+
+      <button class="btn-generate" id="generateRewriteBtn" onclick="generateRewrites()">
+        <span class="btn-text">✦ סוכן ניסוח</span>
+        <span class="spinner"></span>
+      </button>
+    </div>
+
+    <div class="form-card" style="margin-top: 30px;">
+      <h2 style="margin-bottom: 16px; color:#a78bfa; font-size: 22px;">סוכן יצירת תמונה - Gemini / Nano Banana</h2>
+
+      <div class="field">
+        <label>תיאור תמונה</label>
+        <textarea id="imagePrompt" placeholder="תן תיאור ברור בעברית למה שהתמונה צריכה להכיל (למשל: 'קבוצה של מנהלות רווחה בבריכה טורקיז עם בועות שמחה')"></textarea>
+      </div>
+
+      <div class="field">
+        <label>סגנון</label>
+        <select id="imageStyle">
+          <option value="מציאותי" selected>מציאותי</option>
+          <option value="אילוסטרציה" >אילוסטרציה</option>
+          <option value="קומיקס" >קומיקס</option>
+          <option value="minimal" >מינימליסטי</option>
+        </select>
+      </div>
+
+      <button class="btn-generate" id="generateImageBtn" onclick="generateImage()">
+        <span class="btn-text">✦ צור תמונה</span>
+        <span class="spinner"></span>
+      </button>
+    </div>
+
+    <div id="results"></div>
+    <div id="hrResults"></div>
+    <div id="rewriteResults"></div>
+    <div id="imageResults"></div>
+  </div>
+
+  <script>
+    // Chips toggle
+    document.querySelectorAll('.chips').forEach(group => {
+      group.querySelectorAll('.chip').forEach(chip => {
+        chip.addEventListener('click', () => chip.classList.toggle('active'));
+      });
+    });
+
+    const brandProfiles = {};
+
+    function fillBusinessDescription(brandKey) {
+      const desc = document.getElementById('businessDescription');
+      if (brandProfiles[brandKey]) {
+        desc.value = brandProfiles[brandKey];
+      }
+    }
+
+    async function loadBrandIcons() {
+      const brandIconsEl = document.getElementById('brandIcons');
+      const brandSelect = document.getElementById('brandSelect');
+      brandIconsEl.innerHTML = '';
+
+      try {
+        const res = await fetch('/api/brand-info');
+        const data = await res.json();
+        const brands = data.brands || [];
+
+        const allBrands = [
+          ...brands,
+          { key: 'other', name: 'אחר', logo: '', profile: '', domain: '' },
+        ];
+
+        allBrands.forEach((brand) => {
+          if (brand.profile) brandProfiles[brand.key] = brand.profile;
+
+          const btn = document.createElement('button');
+          btn.className = 'brand-icon';
+          btn.dataset.brand = brand.key;
+          btn.title = brand.name;
+
+          if (brand.logo) {
+            const img = document.createElement('img');
+            img.src = brand.logo;
+            img.alt = brand.name;
+            btn.appendChild(img);
+          } else {
+            btn.textContent = brand.key === 'other' ? '+' : brand.name.substring(0, 2).toUpperCase();
+          }
+
+          btn.addEventListener('click', () => {
+            document.querySelectorAll('.brand-icon').forEach((b) => b.classList.remove('active'));
+            btn.classList.add('active');
+            brandSelect.value = brand.key;
+            fillBusinessDescription(brand.key);
+          });
+
+          brandIconsEl.appendChild(btn);
+        });
+
+        // activate the selected brand by default
+        const currentBrand = brandSelect.value;
+        const activeBtn = Array.from(document.querySelectorAll('.brand-icon')).find((b) => b.dataset.brand === currentBrand);
+        if (activeBtn) activeBtn.classList.add('active');
+        fillBusinessDescription(currentBrand);
+      } catch (error) {
+        console.error('Failed to load brand info', error);
+      }
+    }
+
+    document.getElementById('brandSelect').addEventListener('change', (event) => {
+      const selected = event.target.value;
+      document.querySelectorAll('.brand-icon').forEach((b) => {
+        b.classList.toggle('active', b.dataset.brand === selected);
+      });
+      fillBusinessDescription(selected);
+    });
+
+    loadBrandIcons();
+
+    function getSelectedChips(containerId) {
+      return [...document.querySelectorAll(`#${containerId} .chip.active`)]
+        .map(c => c.dataset.value);
+    }
+
+    async function generateAds() {
+      const brand = document.getElementById('brandSelect').value;
+      const businessDescription = document.getElementById('businessDescription').value.trim();
+      const goals = getSelectedChips('goalsChips');
+      const audience = getSelectedChips('audienceChips');
+      const budget = document.getElementById('budget').value;
+      const tone = document.getElementById('tone').value;
+
+      if (!businessDescription) {
+        alert('נא למלא תיאור עסק');
+        return;
+      }
+
+      const btn = document.getElementById('generateBtn');
+      btn.classList.add('loading');
+      btn.disabled = true;
+
+      const resultsEl = document.getElementById('results');
+      resultsEl.innerHTML = '';
+
+      try {
+        const res = await fetch('/api/ads-ai', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ brand, businessDescription, goals, audience, budget, tone }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.error || 'שגיאה בשרת');
+
+        renderAds(data.ads);
+      } catch (err) {
+        resultsEl.innerHTML = `<div class="error-msg">שגיאה: ${err.message}</div>`;
+      } finally {
+        btn.classList.remove('loading');
+        btn.disabled = false;
+      }
+    }
+
+    async function generateFullPipeline() {
+      const brand = document.getElementById('brandSelect').value;
+      const businessDescription = document.getElementById('businessDescription').value.trim();
+      const goals = getSelectedChips('goalsChips');
+      const audience = getSelectedChips('audienceChips');
+      const budget = document.getElementById('budget').value;
+      const tone = document.getElementById('tone').value;
+      const groupInfo = document.getElementById('hrGroupInfo').value.trim();
+      const contentType = document.getElementById('hrContentType').value;
+      const imagePrompt = document.getElementById('imagePrompt').value.trim();
+      const imageStyle = document.getElementById('imageStyle').value;
+
+      if (!businessDescription || !groupInfo || !imagePrompt) {
+        alert('נא למלא תיאור עסק, תיאור קבוצה, ותיאור תמונה');
+        return;
+      }
+
+      const btn = document.getElementById('generatePipelineBtn');
+      btn.classList.add('loading');
+      btn.disabled = true;
+
+      try {
+        const res = await fetch('/api/pipeline', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            brand,
+            businessDescription,
+            goals,
+            audience,
+            budget,
+            tone,
+            groupInfo,
+            contentType,
+            imagePrompt,
+            imageStyle,
+          }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.error || 'Pipeline failed');
+
+        renderAds(data.ads || []);
+        renderHrContent(data.hr || []);
+        renderImage(data.images || []);
+        renderRewrites(data.rewrites || []);
+
+        const resultsEl = document.getElementById('results');
+        resultsEl.insertAdjacentHTML('afterend', `<div class="results-title">✦ Pipeline Status</div><div class="ad-card"><p>שמור ב־Google Sheets: ${data.googleSave?.success ? '✓' : '✗'}</p><p>Telegram: ${data.telegram?.success ? '✓' : '✗'}</p></div>`);
+
+      } catch (err) {
+        alert('שגיאה בצינור: ' + err.message);
+      } finally {
+        btn.classList.remove('loading');
+        btn.disabled = false;
+      }
+    }
+
+    function renderAds(ads) {
+      const resultsEl = document.getElementById('results');
+      resultsEl.innerHTML = `
+        <div class="results-title">✦ המודעות שנוצרו</div>
+        <div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
+          <button class="copy-btn" id="sendTelegramBtn" onclick="sendAdsToTelegram(this)">📱 שלח לטלגרם</button>
+        </div>
+        <div class="ads-grid">
+          ${ads.map((ad, i) => `
+            <div class="ad-card">
+              <span class="ad-number">מודעה ${i + 1}</span>
+              <div class="ad-headline">${escapeHtml(ad.headline)}</div>
+              <div class="ad-primary-text">${escapeHtml(ad.primaryText)}</div>
+              <div class="ad-footer">
+                <div>
+                  <div class="ad-description">${escapeHtml(ad.description)}</div>
+                  <div class="ad-cta">📣 ${escapeHtml(ad.callToAction)}</div>
+                </div>
+                <button class="copy-btn" onclick="copyAd(this, ${i})">העתק</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+      window._adsData = ads;
+      resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    async function sendAdsToTelegram(btn) {
+      const ads = window._adsData || [];
+      if (!ads.length) { alert('אין מודעות לשלוח'); return; }
+
+      const brand = document.getElementById('brandSelect').selectedOptions[0]?.text || document.getElementById('brandSelect').value;
+      const brief = document.getElementById('businessDescription').value.trim() || '(ללא תיאור)';
+
+      btn.disabled = true;
+      btn.textContent = 'שולח...';
+
+      try {
+        const res = await fetch('/api/telegram-approval', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ brand, brief, ads, hrContent: [], imageUrls: [] }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) throw new Error(data.error || 'שגיאה בשליחה');
+        btn.textContent = '✓ נשלח לטלגרם';
+        btn.classList.add('copied');
+      } catch (err) {
+        btn.textContent = 'שגיאה: ' + err.message;
+        setTimeout(() => { btn.textContent = '📱 שלח לטלגרם'; btn.disabled = false; }, 4000);
+      }
+    }
+
+    function copyAd(btn, index) {
+      const ad = window._adsData[index];
+      const text = `כותרת: ${ad.headline}\n\nטקסט: ${ad.primaryText}\n\nתיאור: ${ad.description}\n\nקריאה לפעולה: ${ad.callToAction}`;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✓ הועתק';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.textContent = 'העתק';
+          btn.classList.remove('copied');
+        }, 2000);
+      });
+    }
+
+    async function generateHrContent() {
+      const groupInfo = document.getElementById('hrGroupInfo').value.trim();
+      const contentType = document.getElementById('hrContentType').value;
+      const tone = document.getElementById('hrTone').value;
+
+      if (!groupInfo) {
+        alert('נא למלא את תיאור הקבוצה והצורך');
+        return;
+      }
+
+      const btn = document.getElementById('generateHrBtn');
+      btn.classList.add('loading');
+      btn.disabled = true;
+      const hrResults = document.getElementById('hrResults');
+      hrResults.innerHTML = '';
+
+      try {
+        const res = await fetch('/api/hr-content-ai', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ groupInfo, contentType, tone, language: 'עברית' }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'שגיאה בשרת');
+
+        renderHrContent(data.items);
+      } catch (err) {
+        hrResults.innerHTML = `<div class="error-msg">שגיאה: ${err.message}</div>`;
+      } finally {
+        btn.classList.remove('loading');
+        btn.disabled = false;
+      }
+    }
+
+    function renderHrContent(items) {
+      const hrResults = document.getElementById('hrResults');
+      if (!items || items.length === 0) {
+        hrResults.innerHTML = '<div class="error-msg">לא התקבל תוכן מתאים.</div>';
+        return;
+      }
+
+      hrResults.innerHTML = `
+        <div class="results-title">✦ תוכן HR שנוצר</div>
+        <div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
+          <button class="copy-btn" id="sendHrTelegramBtn" onclick="sendHrToTelegram(this)">📱 שלח לטלגרם</button>
+        </div>
+        <div class="ads-grid">
+          ${items.map((item, i) => `
+            <div class="ad-card">
+              <span class="ad-number">תוכן ${i + 1}</span>
+              <div class="ad-headline">${escapeHtml(item.title || 'רעיון')}</div>
+              <div class="ad-primary-text">${escapeHtml(item.body || item.copy || '')}</div>
+              <div class="ad-footer">
+                <button class="copy-btn" onclick="copyHrItem(this, ${i})">העתק</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+      window._hrItems = items;
+      hrResults.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    async function sendHrToTelegram(btn) {
+      const items = window._hrItems || [];
+      if (!items.length) { alert('אין תוכן לשלוח'); return; }
+
+      const brand = document.getElementById('brandSelect').selectedOptions[0]?.text || document.getElementById('brandSelect').value;
+      const brief = document.getElementById('hrGroupInfo').value.trim() || '(ללא תיאור)';
+
+      const hrContent = items.map(i => ({ content: `${i.title || ''}\n\n${i.body || i.copy || ''}`.trim() }));
+
+      btn.disabled = true;
+      btn.textContent = 'שולח...';
+
+      try {
+        const res = await fetch('/api/telegram-approval', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ brand, brief, ads: [], hrContent, imageUrls: [] }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) throw new Error(data.error || 'שגיאה בשליחה');
+        btn.textContent = '✓ נשלח לטלגרם';
+        btn.classList.add('copied');
+      } catch (err) {
+        btn.textContent = 'שגיאה: ' + err.message;
+        setTimeout(() => { btn.textContent = '📱 שלח לטלגרם'; btn.disabled = false; }, 4000);
+      }
+    }
+
+    function copyHrItem(btn, index) {
+      const item = window._hrItems[index];
+      const text = `כותרת: ${item.title || ''}\n\n${item.body || item.copy || ''}`;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✓ הועתק';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.textContent = 'העתק';
+          btn.classList.remove('copied');
+        }, 2000);
+      });
+    }
+
+    async function generateRewrites() {
+      const originalText = document.getElementById('rewriteOriginalText').value.trim();
+      const platform = document.getElementById('rewritePlatform').value;
+      const tone = document.getElementById('rewriteTone').value;
+      const style = document.getElementById('rewriteStyle').value;
+
+      if (!originalText) {
+        alert('נא להזין טקסט מקורי');
+        return;
+      }
+
+      const btn = document.getElementById('generateRewriteBtn');
+      btn.classList.add('loading');
+      btn.disabled = true;
+      const resultsEl = document.getElementById('rewriteResults');
+      if (!resultsEl) {
+        console.warn('rewriteResults not found');
+        btn.classList.remove('loading');
+        btn.disabled = false;
+        return;
+      }
+      resultsEl.innerHTML = '';
+
+      try {
+        const res = await fetch('/api/rewrite-ai', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ originalText, targetPlatform: platform, tone, style }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'שגיאה בשרת');
+
+        renderRewrites(data.rewrites || []);
+      } catch (err) {
+        if (resultsEl) resultsEl.innerHTML = `<div class="error-msg">שגיאה: ${err.message}</div>`;
+      } finally {
+        btn.classList.remove('loading');
+        btn.disabled = false;
+      }
+    }
+
+    function renderRewrites(rewrites) {
+      const resultsEl = document.getElementById('rewriteResults');
+      if (!rewrites || rewrites.length === 0) {
+        resultsEl.innerHTML = '<div class="error-msg">לא התקבלו ניסוחים.</div>';
+        return;
+      }
+
+      resultsEl.innerHTML = `
+        <div class="results-title">✦ ניסוחים שנוצרו</div>
+        <div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
+          <button class="copy-btn" id="sendRewriteTelegramBtn" onclick="sendRewritesToTelegram(this)">📱 שלח לטלגרם</button>
+        </div>
+        <div class="ads-grid">
+          ${rewrites.map((rw, i) => `
+            <div class="ad-card">
+              <span class="ad-number">גרסה ${rw.version || i + 1}</span>
+              <div class="ad-primary-text">${escapeHtml(rw.text || '')}</div>
+              <div class="ad-footer">
+                <button class="copy-btn" onclick="copyRewrite(this, ${i})">העתק</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+      window._rewrites = rewrites;
+      resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    async function sendRewritesToTelegram(btn) {
+      const rewrites = window._rewrites || [];
+      if (!rewrites.length) { alert('אין ניסוחים לשלוח'); return; }
+
+      const brand = document.getElementById('brandSelect').selectedOptions[0]?.text || document.getElementById('brandSelect').value;
+      const brief = (document.getElementById('rewriteOriginalText')?.value || '').trim().slice(0, 200) || '(ניסוח)';
+
+      const hrContent = rewrites.map(r => ({ content: `גרסה ${r.version || ''}: ${r.text || ''}`.trim() }));
+
+      btn.disabled = true;
+      btn.textContent = 'שולח...';
+
+      try {
+        const res = await fetch('/api/telegram-approval', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ brand, brief, ads: [], hrContent, imageUrls: [] }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) throw new Error(data.error || 'שגיאה בשליחה');
+        btn.textContent = '✓ נשלח לטלגרם';
+        btn.classList.add('copied');
+      } catch (err) {
+        btn.textContent = 'שגיאה: ' + err.message;
+        setTimeout(() => { btn.textContent = '📱 שלח לטלגרם'; btn.disabled = false; }, 4000);
+      }
+    }
+
+    function copyRewrite(btn, index) {
+      const rewrite = window._rewrites[index];
+      navigator.clipboard.writeText(rewrite.text || '').then(() => {
+        btn.textContent = '✓ הועתק';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.textContent = 'העתק';
+          btn.classList.remove('copied');
+        }, 2000);
+      });
+    }
+
+    async function generateImage() {
+
+      const prompt = document.getElementById('imagePrompt').value.trim();
+      const style = document.getElementById('imageStyle').value;
+
+      if (!prompt) {
+        alert('נא להזין תיאור תמונה');
+        return;
+      }
+
+      const btn = document.getElementById('generateImageBtn');
+      btn.classList.add('loading');
+      btn.disabled = true;
+      const imageResults = document.getElementById('imageResults');
+      imageResults.innerHTML = '';
+
+      try {
+        const res = await fetch('/api/image-ai', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt, style, target: 'whatsapp-hr' }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'שגיאה בשרת');
+
+        renderImage(data.images || []);
+      } catch (err) {
+        imageResults.innerHTML = `<div class="error-msg">שגיאה: ${err.message}</div>`;
+      } finally {
+        btn.classList.remove('loading');
+        btn.disabled = false;
+      }
+    }
+
+    function renderImage(images) {
+      const imageResults = document.getElementById('imageResults');
+      if (!images || images.length === 0) {
+        imageResults.innerHTML = '<div class="error-msg">לא התקבלה תמונה.</div>';
+        return;
+      }
+
+      imageResults.innerHTML = `
+        <div class="results-title">✦ תמונה שנוצרה</div>
+        <div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
+          <button class="copy-btn" id="sendImageTelegramBtn" onclick="sendImagesToTelegram(this)">📱 שלח תמונה לטלגרם</button>
+        </div>
+        <div class="ads-grid">
+          ${images.map((src, i) => `
+            <div class="ad-card">
+              <span class="ad-number">תמונה ${i + 1}</span>
+              <img src="${src}" alt="תמונה שנוצרה" style="width:100%; border-radius:12px; margin-bottom:12px;" />
+              <button class="copy-btn" onclick="copyImageUrl(this, '${src}')">העתק קישור</button>
+            </div>
+          `).join('')}
+        </div>
+      `;
+
+      window._generatedImages = images;
+      imageResults.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    async function sendImagesToTelegram(btn) {
+      const images = window._generatedImages || [];
+      if (!images.length) { alert('אין תמונות לשלוח'); return; }
+
+      const brand = document.getElementById('brandSelect').selectedOptions[0]?.text || document.getElementById('brandSelect').value;
+      const brief = document.getElementById('imagePrompt').value.trim() || '(ללא תיאור)';
+
+      btn.disabled = true;
+      btn.textContent = 'שולח...';
+
+      try {
+        const res = await fetch('/api/telegram-approval', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ brand, brief, ads: [], hrContent: [], imageUrls: images }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) throw new Error(data.error || 'שגיאה בשליחה');
+        btn.textContent = '✓ נשלח לטלגרם';
+        btn.classList.add('copied');
+      } catch (err) {
+        btn.textContent = 'שגיאה: ' + err.message;
+        setTimeout(() => { btn.textContent = '📱 שלח תמונה לטלגרם'; btn.disabled = false; }, 4000);
+      }
+    }
+
+    function copyImageUrl(btn, src) {
+      navigator.clipboard.writeText(src).then(() => {
+        btn.textContent = '✓ הועתק';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.textContent = 'העתק קישור';
+          btn.classList.remove('copied');
+        }, 2000);
+      });
+    }
+
+    function escapeHtml(str) {
+      const d = document.createElement('div');
+      d.textContent = str;
+      return d.innerHTML;
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+{
+  "name": "meta-ads-generator",
+  "version": "1.0.0",
+  "description": "Meta Ads Generator with Claude AI",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "googleapis": "^132.0.0"
+  }
+}
