@@ -4,6 +4,7 @@
   "description": "Meta Ads Generator with Claude AI",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
-    "googleapis": "^132.0.0"
+    "googleapis": "^132.0.0",
+    "pdf-parse": "^1.1.1"
   }
 }

@@ -9,18 +9,18 @@
   <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --bg: #0a0a12;
-      --surface: #12121e;
-      --surface2: #1a1a2e;
-      --border: rgba(120, 80, 255, 0.18);
+      --bg: #f4f2ff;
+      --surface: #ffffff;
+      --surface2: #ede9fe;
+      --border: rgba(109, 40, 217, 0.18);
       --accent: #7c3aed;
       --accent2: #2563eb;
-      --accent-glow: rgba(124, 58, 237, 0.35);
-      --text: #f0eeff;
-      --text-muted: #8b87b8;
-      --chip-bg: rgba(124, 58, 237, 0.12);
+      --accent-glow: rgba(124, 58, 237, 0.18);
+      --text: #1e1b4b;
+      --text-muted: #6d6898;
+      --chip-bg: rgba(124, 58, 237, 0.08);
       --chip-active: #7c3aed;
-      --success: #22c55e;
+      --success: #16a34a;
       --radius: 14px;
     }
 
@@ -41,8 +41,8 @@
       position: fixed;
       inset: 0;
       background:
-        radial-gradient(ellipse 80% 60% at 20% 10%, rgba(124,58,237,0.12) 0%, transparent 60%),
-        radial-gradient(ellipse 60% 50% at 80% 80%, rgba(37,99,235,0.1) 0%, transparent 60%);
+        radial-gradient(ellipse 80% 60% at 20% 10%, rgba(124,58,237,0.07) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 80% 80%, rgba(37,99,235,0.06) 0%, transparent 60%);
       pointer-events: none;
       z-index: 0;
     }
@@ -65,12 +65,12 @@
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      background: rgba(124,58,237,0.15);
+      background: rgba(124,58,237,0.1);
       border: 1px solid var(--border);
       border-radius: 100px;
       padding: 6px 18px;
       font-size: 13px;
-      color: #a78bfa;
+      color: #6d28d9;
       letter-spacing: 0.04em;
       margin-bottom: 20px;
     }
@@ -78,9 +78,9 @@
     .logo-badge::before {
       content: '';
       width: 6px; height: 6px;
-      background: #a78bfa;
+      background: #7c3aed;
       border-radius: 50%;
-      box-shadow: 0 0 8px #a78bfa;
+      box-shadow: 0 0 8px rgba(124,58,237,0.5);
       animation: pulse 2s infinite;
     }
 
@@ -93,7 +93,7 @@
       font-size: clamp(32px, 6vw, 52px);
       font-weight: 900;
       line-height: 1.1;
-      background: linear-gradient(135deg, #e0d7ff 0%, #7c3aed 50%, #2563eb 100%);
+      background: linear-gradient(135deg, #4c1d95 0%, #7c3aed 50%, #2563eb 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
@@ -112,7 +112,7 @@
       border: 1px solid var(--border);
       border-radius: 24px;
       padding: 36px;
-      box-shadow: 0 0 60px rgba(124,58,237,0.08);
+      box-shadow: 0 4px 24px rgba(109,40,217,0.08), 0 1px 4px rgba(0,0,0,0.04);
     }
 
     .field {
@@ -123,7 +123,7 @@
       display: block;
       font-size: 14px;
       font-weight: 600;
-      color: #c4b5fd;
+      color: #5b21b6;
       margin-bottom: 10px;
       letter-spacing: 0.02em;
     }
@@ -143,13 +143,14 @@
       direction: rtl;
     }
 
+    textarea::placeholder { color: var(--text-muted); opacity: 0.7; }
+
     textarea:focus {
       outline: none;
       border-color: var(--accent);
       box-shadow: 0 0 0 3px var(--accent-glow);
     }
 
-    textarea::placeholder { color: var(--text-muted); }
 
     /* Chips */
     .chips {
@@ -162,7 +163,7 @@
       padding: 8px 16px;
       border-radius: 100px;
       background: var(--chip-bg);
-      border: 1px solid rgba(124,58,237,0.25);
+      border: 1px solid rgba(124,58,237,0.2);
       color: var(--text-muted);
       font-family: 'Heebo', sans-serif;
       font-size: 14px;
@@ -295,6 +296,7 @@
       position: relative;
       overflow: hidden;
       animation: fadeUp 0.4s ease both;
+      box-shadow: 0 2px 12px rgba(109,40,217,0.06);
     }
 
     .ad-card::before {
@@ -327,7 +329,7 @@
     .ad-headline {
       font-size: 20px;
       font-weight: 800;
-      color: #e0d7ff;
+      color: #3b0764;
       margin-bottom: 12px;
       line-height: 1.3;
       padding-left: 60px;
@@ -347,7 +349,7 @@
       justify-content: space-between;
       flex-wrap: wrap;
       gap: 10px;
-      border-top: 1px solid rgba(255,255,255,0.06);
+      border-top: 1px solid rgba(109,40,217,0.1);
       padding-top: 16px;
     }
 
@@ -360,18 +362,18 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      background: rgba(124,58,237,0.2);
-      border: 1px solid rgba(124,58,237,0.4);
+      background: rgba(124,58,237,0.1);
+      border: 1px solid rgba(124,58,237,0.3);
       border-radius: 8px;
       padding: 7px 16px;
       font-size: 13px;
       font-weight: 600;
-      color: #a78bfa;
+      color: #6d28d9;
     }
 
     .copy-btn {
       background: none;
-      border: 1px solid rgba(255,255,255,0.1);
+      border: 1px solid rgba(109,40,217,0.2);
       border-radius: 8px;
       color: var(--text-muted);
       font-family: 'Heebo', sans-serif;
@@ -403,8 +405,8 @@
       height: 46px;
       border-radius: 12px;
       border: 1px solid rgba(124,58,237,0.2);
-      background: rgba(255,255,255,0.04);
-      color: #c4b5fd;
+      background: rgba(124,58,237,0.05);
+      color: #6d28d9;
       font-weight: 700;
       cursor: pointer;
       transition: all 0.2s;
@@ -489,22 +491,22 @@
     .chat-panel {
       display: none;
       background: var(--surface);
-      border: 1px solid rgba(124,58,237,0.35);
+      border: 1px solid rgba(124,58,237,0.2);
       border-radius: 20px;
       overflow: hidden;
       margin-top: 12px;
-      box-shadow: 0 0 40px rgba(124,58,237,0.12);
+      box-shadow: 0 4px 24px rgba(109,40,217,0.1);
     }
 
     .chat-panel.open { display: block; }
 
     .chat-header {
-      background: linear-gradient(135deg, rgba(124,58,237,0.25), rgba(37,99,235,0.2));
+      background: linear-gradient(135deg, rgba(124,58,237,0.1), rgba(37,99,235,0.07));
       padding: 16px 20px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      border-bottom: 1px solid rgba(124,58,237,0.2);
+      border-bottom: 1px solid rgba(124,58,237,0.12);
     }
 
     .chat-header-info {
@@ -526,7 +528,7 @@
     .chat-header h3 {
       font-size: 15px;
       font-weight: 700;
-      color: #e0d7ff;
+      color: #3b0764;
       margin: 0;
     }
 
@@ -581,7 +583,7 @@
 
     .msg.ai .msg-bubble {
       background: var(--surface2);
-      border: 1px solid rgba(124,58,237,0.2);
+      border: 1px solid rgba(124,58,237,0.15);
       color: var(--text);
       border-radius: 4px 16px 16px 16px;
     }
@@ -634,7 +636,7 @@
 
     .chat-input-row {
       padding: 16px 20px;
-      border-top: 1px solid rgba(255,255,255,0.06);
+      border-top: 1px solid rgba(109,40,217,0.1);
       display: flex;
       gap: 10px;
       align-items: flex-end;
@@ -714,6 +716,53 @@
     }
 
     .btn-apply-brief:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(34,197,94,0.35); }
+
+    /* File upload */
+    .file-upload-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 20px;
+      border-top: 1px solid rgba(109,40,217,0.1);
+      background: rgba(124,58,237,0.03);
+    }
+
+    .file-upload-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(124,58,237,0.08);
+      border: 1px dashed rgba(124,58,237,0.35);
+      border-radius: 10px;
+      color: #6d28d9;
+      font-family: 'Heebo', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .file-upload-btn:hover {
+      background: rgba(124,58,237,0.14);
+      border-color: var(--accent);
+    }
+
+    .file-status {
+      font-size: 12px;
+      color: var(--text-muted);
+      flex: 1;
+    }
+
+    .file-status.loading { color: var(--accent); }
+    .file-status.done { color: var(--success); font-weight: 600; }
+    .file-status.error { color: #dc2626; }
+
+    /* h2 in form cards */
+    .form-card h2 { color: #5b21b6 !important; }
+
+    /* results title */
+    .results-title { color: #5b21b6; }
   </style>
 </head>
 <body>
@@ -758,6 +807,14 @@
         <div class="form-ready-banner" id="formReadyBanner">
           <p>✅ הסוכן בנה לך בריף מנצח - כל שדות הטופס מוכנים למילוי אוטומטי</p>
           <button class="btn-apply-brief" onclick="applyBriefAndRun()">✦ מלא טופס והפעל צינור מלא</button>
+        </div>
+
+        <div class="file-upload-row" id="fileUploadRow">
+          <label class="file-upload-btn" for="fileInput">
+            📎 העלה קובץ (PDF / תמונה)
+          </label>
+          <input type="file" id="fileInput" accept=".pdf,image/*" style="display:none" onchange="handleFileUpload(this)">
+          <span class="file-status" id="fileStatus"></span>
         </div>
 
         <div class="chat-input-row">
@@ -1624,6 +1681,76 @@
     function autoResizeChat(el) {
       el.style.height = 'auto';
       el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+    }
+
+    async function handleFileUpload(input) {
+      const file = input.files[0];
+      if (!file) return;
+
+      const statusEl = document.getElementById('fileStatus');
+      statusEl.className = 'file-status loading';
+      statusEl.textContent = `קורא "${file.name}"...`;
+
+      try {
+        // קרא קובץ כ-base64
+        const base64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = e => resolve(e.target.result.split(',')[1]);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+
+        const res = await fetch('/api/parse-file', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileBase64: base64, fileName: file.name, mimeType: file.type }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'שגיאה בפענוח');
+
+        statusEl.className = 'file-status done';
+        statusEl.textContent = `✓ "${file.name}" נקרא (${data.charCount} תווים)`;
+
+        // שלח לסוכן עם תוכן הקובץ
+        if (!chatStarted) {
+          chatStarted = true;
+          addAgentMessage('שלום! אני הסוכן השיווקי שלך 🎯\nבשיחה קצרה נבנה ביחד בריף חזק שיפיק מודעות, תוכן ותמונה שמביאים תוצאות.\n\nבואו נתחיל - **איזה מותג או עסק רוצה לפרסם היום?**');
+        }
+
+        const fileMessage = `העלתי קובץ: "${file.name}"\n\nתוכן הקובץ:\n${data.text.substring(0, 3000)}${data.text.length > 3000 ? '...' : ''}`;
+        addUserMessage(`📎 קובץ: ${file.name}`);
+
+        const sendBtn = document.getElementById('chatSendBtn');
+        sendBtn.disabled = true;
+        setTyping(true);
+
+        const agentRes = await fetch('/api/brief-agent', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: fileMessage, conversationHistory: agentConversation }),
+        });
+
+        const agentData = await agentRes.json();
+        if (!agentRes.ok) throw new Error(agentData.error || 'שגיאה בסוכן');
+
+        agentConversation = agentData.conversation || agentConversation;
+        setTyping(false);
+        addAgentMessage(agentData.reply);
+
+        if (agentData.formData) {
+          pendingFormData = agentData.formData;
+          document.getElementById('formReadyBanner').classList.add('show');
+        }
+
+        sendBtn.disabled = false;
+      } catch (err) {
+        statusEl.className = 'file-status error';
+        statusEl.textContent = 'שגיאה: ' + err.message;
+        setTyping(false);
+      }
+
+      input.value = '';
     }
 
     function applyBriefAndRun() {
