@@ -47,29 +47,37 @@ module.exports = async (req, res) => {
       catch (err) { console.error(`pipeline:${label} failed`, err); return { error: err.message }; }
     };
 
-    const adsResult = await callHandler(adsHandler, { brand, businessDescription, goals, audience, budget, tone });
-    const hrResult = await safe('hr', () => callHandler(hrHandler, { groupInfo, contentType, tone, language: 'עברית' }));
-    const imageResult = await safe('image', () => callHandler(imageHandler, { prompt: imagePrompt, style: imageStyle || 'מציאותי' }));
-    const rewriteResult = rewriteText
-      ? await safe('rewrite', () => callHandler(rewriteHandler, { originalText: rewriteText, targetPlatform: 'whatsapp', tone: 'מקצועי', style: 'קצר' }))
-      : { rewrites: [] };
+    // הרץ את כל הקריאות הבלתי-תלויות במקביל
+    const [adsResult, hrResult, imageResult, rewriteResult] = await Promise.all([
+      safe('ads', () => callHandler(adsHandler, { brand, businessDescription, goals, audience, budget, tone })),
+      safe('hr', () => callHandler(hrHandler, { groupInfo, contentType, tone, language: 'עברית' })),
+      safe('image', () => callHandler(imageHandler, { prompt: imagePrompt, style: imageStyle || 'מציאותי' })),
+      rewriteText
+        ? safe('rewrite', () => callHandler(rewriteHandler, { originalText: rewriteText, targetPlatform: 'whatsapp', tone: 'מקצועי', style: 'קצר' }))
+        : Promise.resolve({ rewrites: [] }),
+    ]);
 
-    const saveResult = await safe('google-save', () => callHandler(googleSaveHandler, {
-      brand,
-      brief: businessDescription,
-      ads: adsResult.ads || [],
-      hrContent: hrResult.items || [],
-      imageUrls: imageResult.images || [],
-      status: 'pending',
-    }));
+    if (adsResult.error && !adsResult.ads) {
+      return res.status(500).json({ error: `ads failed: ${adsResult.error}` });
+    }
 
-    const telegramResult = await safe('telegram', () => callHandler(telegramHandler, {
-      brand,
-      brief: businessDescription,
-      ads: adsResult.ads || [],
-      hrContent: hrResult.items || [],
-      imageUrls: imageResult.images || [],
-    }));
+    const [saveResult, telegramResult] = await Promise.all([
+      safe('google-save', () => callHandler(googleSaveHandler, {
+        brand,
+        brief: businessDescription,
+        ads: adsResult.ads || [],
+        hrContent: hrResult.items || [],
+        imageUrls: imageResult.images || [],
+        status: 'pending',
+      })),
+      safe('telegram', () => callHandler(telegramHandler, {
+        brand,
+        brief: businessDescription,
+        ads: adsResult.ads || [],
+        hrContent: hrResult.items || [],
+        imageUrls: imageResult.images || [],
+      })),
+    ]);
 
     return res.status(200).json({
       success: true,
