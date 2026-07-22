@@ -110,29 +110,7 @@ module.exports = async (req, res) => {
       adsData = JSON.parse(jsonMatch[0]);
     }
     // מחזירים גם את השפה כדי שהממשק ידע איך להציג (כיוון טקסט, כותרת קבוצה)
-    const payload = { ...adsData, language: matchedLanguage };
-
-    // אבחון זמני - נשלח רק כשמבקשים אותו במפורש. יוסר אחרי שהבאג ייסגר.
-    if (req.body && req.body.__debug) {
-      payload.__debug = {
-        bodyKeys: Object.keys(req.body || {}),
-        requestedLanguage,
-        requestedLanguageType: typeof requestedLanguage,
-        requestedLanguageCodes: requestedLanguage
-          ? [...String(requestedLanguage)].map((c) => c.codePointAt(0).toString(16))
-          : null,
-        brandFound: Boolean(brandInfo),
-        brandLanguage: brandInfo ? brandInfo.language : null,
-        resolvedLanguage: language,
-        resolvedLanguageCodes: [...String(language)].map((c) => c.codePointAt(0).toString(16)),
-        labels: LANGUAGES.map((l) => l.label),
-        labelCodes: LANGUAGES.map((l) => [...l.label].map((c) => c.codePointAt(0).toString(16))),
-        matchedLanguage,
-        nodeVersion: process.version,
-      };
-    }
-
-    return res.status(200).json(payload);
+    return res.status(200).json({ ...adsData, language: matchedLanguage });
   } catch (error) {
     console.error('Error ads-ai:', error);
     return res.status(500).json({ error: error.message || 'Internal server error' });
