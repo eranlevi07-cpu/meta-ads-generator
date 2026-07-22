@@ -15,19 +15,24 @@ module.exports = async (req, res) => {
     // סדר עדיפות: שפה שנבחרה בממשק > שפת המותג > עברית
     const language = requestedLanguage || (brandInfo && brandInfo.language) || 'עברית';
 
-    // רשימת קריאות לפעולה תקניות של Meta, לכל שפה
-    const CTA_BY_LANGUAGE = {
-      עברית: '"למידע נוסף", "הזמן עכשיו", "קנה עכשיו", "הירשם", "צור קשר", "קבל הצעת מחיר"',
-      ערבית: '"احجز الآن", "اشترِ الآن", "تواصل معنا", "اشترك الآن", "اطلب عرض سعر", "للمزيد من المعلومات"',
-      רוסית: '"Узнать больше", "Забронировать", "Купить сейчас", "Зарегистрироваться", "Связаться с нами", "Получить предложение"',
-    };
+    // רשימת קריאות לפעולה תקניות של Meta, לכל שפה.
+    // חשוב: מערך עם מפתחות באנגלית ומחרוזות במרכאות בלבד - מזהים בעברית
+    // (למשל { עברית: ... }) עוברים עיוות אצל חלק מה-bundlers ואז ההשוואה נכשלת.
+    const LANGUAGES = [
+      { id: 'he', label: 'עברית', cta: '"למידע נוסף", "הזמן עכשיו", "קנה עכשיו", "הירשם", "צור קשר", "קבל הצעת מחיר"' },
+      { id: 'ar', label: 'ערבית', cta: '"احجز الآن", "اشترِ الآن", "تواصل معنا", "اشترك الآن", "اطلب عرض سعر", "للمزيد من المعلومات"' },
+      { id: 'ru', label: 'רוסית', cta: '"Узнать больше", "Забронировать", "Купить сейчас", "Зарегистрироваться", "Связаться с нами", "Получить предложение"' },
+    ];
 
-    const matchedLanguage =
-      Object.keys(CTA_BY_LANGUAGE).find((key) => language.includes(key)) || 'עברית';
-    const ctaList = CTA_BY_LANGUAGE[matchedLanguage];
+    const selected =
+      LANGUAGES.find((l) => language.includes(l.label)) ||
+      LANGUAGES.find((l) => language.toLowerCase().includes(l.id)) ||
+      LANGUAGES[0];
+    const matchedLanguage = selected.label;
+    const ctaList = selected.cta;
 
     const prompt = `אתה מומחה לפרסום ברשתות חברתיות ובמיוחד ב-Meta (פייסבוק ואינסטגרם).
-צור 3 מודעות Meta שונות ומגוונות בשפת ה${language} עבור העסק הבא:
+צור 3 מודעות Meta שונות ומגוונות בשפת ה${matchedLanguage} עבור העסק הבא:
 
 מותג: ${brandInfo ? brandInfo.name : brand || 'לא ידוע'}
 אתר: ${brandInfo ? brandInfo.domain : 'לא זמין'}
@@ -53,25 +58,57 @@ module.exports = async (req, res) => {
 }
 
 הנחיות חשובות:
-- כל המודעות חייבות להיות בשפת ה${language} בלבד - כותרות, טקסט ראשי, תיאור וקריאה לפעולה הכל ב${language}
-- **אלה מודעות מקוריות, לא תרגום.** כתוב אותן כאילו אתה קופירייטר יליד ${language} שכותב לקהל שלו מאפס. השתמש בביטויים, הומור, ניואנסים ונקודות כאב שמדברים דווקא לקהל הזה. מותר ואף רצוי שהזווית תהיה שונה לגמרי ממה שהיית כותב בשפה אחרת.
+- כל המודעות חייבות להיות בשפת ה${matchedLanguage} בלבד - כותרות, טקסט ראשי, תיאור וקריאה לפעולה הכל ב${matchedLanguage}
+- **אלה מודעות מקוריות, לא תרגום.** כתוב אותן כאילו אתה קופירייטר יליד ${matchedLanguage} שכותב לקהל שלו מאפס. השתמש בביטויים, הומור, ניואנסים ונקודות כאב שמדברים דווקא לקהל הזה. מותר ואף רצוי שהזווית תהיה שונה לגמרי ממה שהיית כותב בשפה אחרת.
 - כל מודעה צריכה להיות שונה בגישה ובמסר
-- השתמש ב${language} טבעית, נכונה ומשכנעת מבחינה תרבותית לקהל היעד
+- השתמש ב${matchedLanguage} טבעית, נכונה ומשכנעת מבחינה תרבותית לקהל היעד
 - התאם את הטון שביקשו
 - הכלול הוקים חזקים בתחילת כל מודעה
-- קריאה לפעולה חייבת להיות אחת מאלה (ב${language}): ${ctaList}`;
+- קריאה לפעולה חייבת להיות אחת מאלה (ב${matchedLanguage}): ${ctaList}`;
+
+    // מבנה מחייב לתשובה - מבטיח JSON תקין תמיד, בלי לנחש ובלי regex שביר
+    const ADS_SCHEMA = {
+      type: 'object',
+      properties: {
+        ads: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              headline: { type: 'string' },
+              primaryText: { type: 'string' },
+              description: { type: 'string' },
+              callToAction: { type: 'string' },
+            },
+            required: ['headline', 'primaryText', 'description', 'callToAction'],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ['ads'],
+      additionalProperties: false,
+    };
 
     const message = await client.messages.create({
       model: 'claude-opus-4-8',
       max_tokens: 2000,
+      output_config: { format: { type: 'json_schema', schema: ADS_SCHEMA } },
       messages: [{ role: 'user', content: prompt }],
     });
 
-    const responseText = message.content[0].text.trim();
-    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('Invalid JSON response from AI');
+    const textBlock = (message.content || []).find((b) => b.type === 'text');
+    const responseText = (textBlock ? textBlock.text : '').trim();
+    if (!responseText) throw new Error('התקבלה תשובה ריקה מהמודל');
 
-    const adsData = JSON.parse(jsonMatch[0]);
+    let adsData;
+    try {
+      adsData = JSON.parse(responseText);
+    } catch (e) {
+      // רשת ביטחון: אם בכל זאת הגיע טקסט עוטף, לחלץ את גוש ה-JSON
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error('התקבלה תשובה שאינה JSON תקין');
+      adsData = JSON.parse(jsonMatch[0]);
+    }
     // מחזירים גם את השפה כדי שהממשק ידע איך להציג (כיוון טקסט, כותרת קבוצה)
     return res.status(200).json({ ...adsData, language: matchedLanguage });
   } catch (error) {
