@@ -1661,10 +1661,11 @@
       btn.textContent = 'מנסח...';
 
       try {
-        const res = await fetch('/api/image-prompt-ai', {
+        const res = await fetch('/api/image-ai', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            mode: 'prompt',
             brand: document.getElementById('brandSelect').value,
             businessDescription: document.getElementById('businessDescription').value.trim(),
             imageIdea: document.getElementById('imagePrompt').value.trim(),

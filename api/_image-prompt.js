@@ -3,8 +3,6 @@ const BRAND_DATA = require('../brand-data.json');
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-const { guard } = require('./_guard');
-
 // מבנה מחייב לתשובה - פרומט באנגלית למחולל, והסבר בעברית לערן
 const PROMPT_SCHEMA = {
   type: 'object',
@@ -17,11 +15,9 @@ const PROMPT_SCHEMA = {
   additionalProperties: false,
 };
 
-module.exports = async (req, res) => {
-  if (guard(req, res, { method: 'POST' })) return;
-
-  try {
-    const { brand, businessDescription, imageIdea, style, adHeadline } = req.body;
+async function generateImagePrompt(body) {
+  {
+    const { brand, businessDescription, imageIdea, style, adHeadline } = body || {};
     const brandInfo = (BRAND_DATA.brands || []).find((b) => b.key === brand);
 
     const prompt = `אתה מנהל אמנותי שמתמחה בתמונות למודעות Meta (פייסבוק ואינסטגרם) בשוק הישראלי.
@@ -71,9 +67,8 @@ ${imageIdea ? `רעיון גולמי של הלקוח: ${imageIdea}` : 'הלקו�
       data = JSON.parse(jsonMatch[0]);
     }
 
-    return res.status(200).json(data);
-  } catch (error) {
-    console.error('Error image-prompt-ai:', error);
-    return res.status(500).json({ error: error.message || 'Internal server error' });
+    return data;
   }
-};
+}
+
+module.exports = { generateImagePrompt };

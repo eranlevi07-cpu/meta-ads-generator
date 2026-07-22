@@ -1,4 +1,5 @@
 const { guard } = require('./_guard');
+const { generateImagePrompt } = require('./_image-prompt');
 
 // ממיר data URL למרכיביו. מחזיר null אם זה לא data URL.
 function parseDataUrl(dataUrl) {
@@ -153,7 +154,15 @@ module.exports = async (req, res) => {
   if (guard(req, res, { method: 'POST' })) return;
 
   try {
-    const { prompt, style, provider, baseImage, instruction } = req.body;
+    const { mode, prompt, style, provider, baseImage, instruction } = req.body;
+
+    // מצב ניסוח: מחזיר פרומט מקצועי במקום תמונה.
+    // מאוחד לכאן ולא כ-endpoint נפרד בגלל מגבלת 12 הפונקציות בתוכנית Hobby.
+    if (mode === 'prompt') {
+      const data = await generateImagePrompt(req.body);
+      return res.status(200).json(data);
+    }
+
     const isEdit = Boolean(baseImage);
 
     if (isEdit && !instruction) return res.status(400).json({ error: 'חסרה הוראת עריכה' });
