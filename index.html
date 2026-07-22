@@ -995,18 +995,41 @@
       <h2 style="margin-bottom: 16px; color:#a78bfa; font-size: 22px;">סוכן יצירת תמונה - Gemini / Nano Banana</h2>
 
       <div class="field">
-        <label>תיאור תמונה</label>
+        <label>תיאור תמונה <span style="font-weight:400; opacity:.7;">(בעברית, או השאר ריק ותן לסוכן להציע)</span></label>
         <textarea id="imagePrompt" placeholder="תן תיאור ברור בעברית למה שהתמונה צריכה להכיל (למשל: 'קבוצה של מנהלות רווחה בבריכה טורקיז עם בועות שמחה')"></textarea>
       </div>
 
-      <div class="field">
-        <label>סגנון</label>
-        <select id="imageStyle">
-          <option value="מציאותי" selected>מציאותי</option>
-          <option value="אילוסטרציה" >אילוסטרציה</option>
-          <option value="קומיקס" >קומיקס</option>
-          <option value="minimal" >מינימליסטי</option>
-        </select>
+      <button class="copy-btn" id="writePromptBtn" onclick="writeImagePrompt()" style="margin-bottom:14px;">
+        🪄 נסח לי פרומט מקצועי
+      </button>
+
+      <div id="promptPreview" style="display:none; margin-bottom:14px; padding:12px; border-radius:10px; background:rgba(109,40,217,.06); border:1px solid rgba(109,40,217,.18);">
+        <div style="font-weight:600; margin-bottom:6px;">📝 מה הסוכן ביקש מהמחולל:</div>
+        <div id="promptExplanation" style="margin-bottom:10px; line-height:1.6;"></div>
+        <details>
+          <summary style="cursor:pointer; opacity:.75;">הפרומט המלא באנגלית (לעריכה ידנית)</summary>
+          <textarea id="promptEnglish" dir="ltr" style="margin-top:8px; width:100%; min-height:110px; text-align:left;"></textarea>
+        </details>
+      </div>
+
+      <div class="row-2">
+        <div class="field">
+          <label>סגנון</label>
+          <select id="imageStyle">
+            <option value="מציאותי" selected>מציאותי</option>
+            <option value="אילוסטרציה" >אילוסטרציה</option>
+            <option value="קומיקס" >קומיקס</option>
+            <option value="minimal" >מינימליסטי</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>מחולל התמונות</label>
+          <select id="imageProvider">
+            <option value="gemini" selected>Gemini / Nano Banana</option>
+            <option value="openai">GPT Image (OpenAI)</option>
+          </select>
+        </div>
       </div>
 
       <button class="btn-generate" id="generateImageBtn" onclick="generateImage()">
@@ -1591,9 +1614,11 @@
 
       const prompt = document.getElementById('imagePrompt').value.trim();
       const style = document.getElementById('imageStyle').value;
+      const englishPromptEarly = (document.getElementById('promptEnglish').value || '').trim();
 
-      if (!prompt) {
-        alert('נא להזין תיאור תמונה');
+      // מספיק אחד מהשניים: תיאור בעברית, או פרומט שהסוכן ניסח
+      if (!prompt && !englishPromptEarly) {
+        alert('נא להזין תיאור תמונה, או ללחוץ על "נסח לי פרומט מקצועי"');
         return;
       }
 
@@ -1603,17 +1628,23 @@
       const imageResults = document.getElementById('imageResults');
       imageResults.innerHTML = '';
 
+      // אם הסוכן ניסח פרומט באנגלית - שולחים אותו, כי מחוללי תמונות
+      // מפיקים תוצאות טובות בהרבה מאנגלית מאשר מעברית
+      const englishPrompt = (document.getElementById('promptEnglish').value || '').trim();
+      const provider = document.getElementById('imageProvider').value;
+
       try {
         const res = await fetch('/api/image-ai', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt, style, target: 'whatsapp-hr' }),
+          body: JSON.stringify({ prompt: englishPrompt || prompt, style, provider, target: 'whatsapp-hr' }),
         });
 
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'שגיאה בשרת');
 
-        renderImage(data.images || []);
+        window._generatedImages = data.images || [];
+        renderImage();
       } catch (err) {
         imageResults.innerHTML = `<div class="error-msg">שגיאה: ${err.message}</div>`;
       } finally {
@@ -1622,31 +1653,130 @@
       }
     }
 
-    function renderImage(images) {
+    // מבקש מהסוכן לנסח פרומט מקצועי מתוך הקשר המותג
+    async function writeImagePrompt() {
+      const btn = document.getElementById('writePromptBtn');
+      const original = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = 'מנסח...';
+
+      try {
+        const res = await fetch('/api/image-prompt-ai', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            brand: document.getElementById('brandSelect').value,
+            businessDescription: document.getElementById('businessDescription').value.trim(),
+            imageIdea: document.getElementById('imagePrompt').value.trim(),
+            style: document.getElementById('imageStyle').value,
+            adHeadline: (window._adsData || [])[0]?.headline || '',
+          }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'שגיאה בשרת');
+
+        const full = data.negativePromptEn
+          ? `${data.promptEn}\n\nAvoid: ${data.negativePromptEn}`
+          : data.promptEn;
+
+        document.getElementById('promptEnglish').value = full;
+        document.getElementById('promptExplanation').textContent = data.explanationHe || '';
+        document.getElementById('promptPreview').style.display = 'block';
+      } catch (err) {
+        alert('שגיאה בניסוח הפרומט: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = original;
+      }
+    }
+
+    // עריכת תמונה קיימת - משנה רק את מה שביקשת, שאר התמונה נשמרת
+    async function editImage(index, btn) {
+      const input = document.getElementById('editInstruction' + index);
+      const instruction = (input.value || '').trim();
+      if (!instruction) { alert('נא לכתוב מה לשנות בתמונה'); return; }
+
+      const baseImage = (window._generatedImages || [])[index];
+      if (!baseImage) { alert('לא נמצאה תמונה לעריכה'); return; }
+
+      btn.disabled = true;
+      const original = btn.textContent;
+      btn.textContent = 'עורך...';
+
+      try {
+        const res = await fetch('/api/image-ai', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            baseImage,
+            instruction,
+            provider: document.getElementById('imageProvider').value,
+          }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'שגיאה בשרת');
+
+        // התמונה החדשה נוספת לצד הקיימת - שום גרסה לא נמחקת
+        window._generatedImages = (window._generatedImages || []).concat(data.images || []);
+        window._editLabels = window._editLabels || {};
+        window._editLabels[window._generatedImages.length - 1] = instruction;
+        renderImage();
+      } catch (err) {
+        alert('שגיאה בעריכה: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = original;
+      }
+    }
+
+    function renderImage() {
+      const images = window._generatedImages || [];
+      const labels = window._editLabels || {};
       const imageResults = document.getElementById('imageResults');
-      if (!images || images.length === 0) {
+
+      if (!images.length) {
         imageResults.innerHTML = '<div class="error-msg">לא התקבלה תמונה.</div>';
         return;
       }
 
       imageResults.innerHTML = `
-        <div class="results-title">✦ תמונה שנוצרה</div>
+        <div class="results-title">✦ תמונות שנוצרו</div>
         <div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
           <button class="copy-btn" id="sendImageTelegramBtn" onclick="sendImagesToTelegram(this)">📱 שלח תמונה לטלגרם</button>
         </div>
         <div class="ads-grid">
           ${images.map((src, i) => `
             <div class="ad-card">
-              <span class="ad-number">תמונה ${i + 1}</span>
+              <span class="ad-number">${labels[i] ? 'אחרי עריכה' : 'תמונה ' + (i + 1)}</span>
+              ${labels[i] ? `<div style="font-size:.85rem; opacity:.7; margin-bottom:8px;">🖉 ${escapeHtml(labels[i])}</div>` : ''}
               <img src="${src}" alt="תמונה שנוצרה" style="width:100%; border-radius:12px; margin-bottom:12px;" />
-              <button class="copy-btn" onclick="copyImageUrl(this, '${src}')">העתק קישור</button>
+              <div style="display:flex; gap:6px; margin-bottom:10px;">
+                <input id="editInstruction${i}" type="text" placeholder="מה לשנות? למשל: תוסיף שמש, תחליף לרקע ערב"
+                  style="flex:1; padding:8px 10px; border-radius:8px; border:1px solid rgba(109,40,217,.25);" />
+                <button class="copy-btn" onclick="editImage(${i}, this)">🖉 ערוך</button>
+              </div>
+              <button class="copy-btn" onclick="copyImageByIndex(this, ${i})">העתק קישור</button>
             </div>
           `).join('')}
         </div>
       `;
 
-      window._generatedImages = images;
       imageResults.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    async function copyImageByIndex(btn, index) {
+      const src = (window._generatedImages || [])[index];
+      if (!src) return;
+      try {
+        await navigator.clipboard.writeText(src);
+        const original = btn.textContent;
+        btn.textContent = 'הועתק ✓';
+        setTimeout(() => { btn.textContent = original; }, 1500);
+      } catch (e) {
+        alert('לא הצלחתי להעתיק');
+      }
     }
 
     async function sendImagesToTelegram(btn) {
