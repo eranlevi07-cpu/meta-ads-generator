@@ -893,6 +893,15 @@
         </div>
       </div>
 
+      <div class="field">
+        <label>שפות המודעות <span style="font-weight:400; opacity:.7;">(אפשר לסמן כמה - כל שפה מקבלת מודעות מקוריות משלה)</span></label>
+        <div class="chips" id="languageChips">
+          <div class="chip active" data-value="עברית">🇮🇱 עברית</div>
+          <div class="chip" data-value="ערבית">🇸🇦 ערבית</div>
+          <div class="chip" data-value="רוסית">🇷🇺 רוסית</div>
+        </div>
+      </div>
+
       <button class="btn-generate" id="generateBtn" onclick="generateAds()">
         <span class="btn-text">✦ צור מודעות</span>
         <span class="spinner"></span>
@@ -1152,6 +1161,12 @@
         return;
       }
 
+      const languages = getSelectedChips('languageChips');
+      if (!languages.length) {
+        alert('נא לבחור לפחות שפה אחת');
+        return;
+      }
+
       const btn = document.getElementById('generateBtn');
       btn.classList.add('loading');
       btn.disabled = true;
@@ -1160,17 +1175,31 @@
       resultsEl.innerHTML = '';
 
       try {
-        const res = await fetch('/api/ads-ai', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ brand, businessDescription, goals, audience, budget, tone }),
-        });
+        // כל שפה נשלחת בבקשה נפרדת ובמקביל - כך כל שפה מקבלת מודעות מקוריות
+        // ולא תרגום, והזמן הכולל הוא של השפה האיטית ביותר במקום סכום כולן.
+        const results = await Promise.all(
+          languages.map(async (language) => {
+            try {
+              const res = await fetch('/api/ads-ai', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ brand, businessDescription, goals, audience, budget, tone, language }),
+              });
+              const data = await res.json();
+              if (!res.ok) throw new Error(data.error || 'שגיאה בשרת');
+              return { language, ads: data.ads || [] };
+            } catch (err) {
+              return { language, ads: [], error: err.message };
+            }
+          })
+        );
 
-        const data = await res.json();
+        // אם כל השפות נכשלו - להציג שגיאה במקום מסך ריק
+        if (results.every((r) => r.error)) {
+          throw new Error(results[0].error);
+        }
 
-        if (!res.ok) throw new Error(data.error || 'שגיאה בשרת');
-
-        renderAds(data.ads);
+        renderAds(results);
       } catch (err) {
         resultsEl.innerHTML = `<div class="error-msg">שגיאה: ${err.message}</div>`;
       } finally {
@@ -1238,31 +1267,69 @@
       }
     }
 
-    function renderAds(ads) {
+    // תצוגה של כל שפה: דגל, וכיוון טקסט (רוסית משמאל לימין)
+    const LANGUAGE_DISPLAY = {
+      עברית: { flag: '🇮🇱', dir: 'rtl' },
+      ערבית: { flag: '🇸🇦', dir: 'rtl' },
+      רוסית: { flag: '🇷🇺', dir: 'ltr' },
+    };
+
+    // מקבל או מערך שטוח של מודעות (הצינור המלא), או מערך קבוצות לפי שפה
+    function renderAds(input) {
       const resultsEl = document.getElementById('results');
-      resultsEl.innerHTML = `
-        <div class="results-title">✦ המודעות שנוצרו</div>
-        <div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
-          <button class="copy-btn" id="sendTelegramBtn" onclick="sendAdsToTelegram(this)">📱 שלח לטלגרם</button>
-        </div>
-        <div class="ads-grid">
-          ${ads.map((ad, i) => `
-            <div class="ad-card">
+      const groups = Array.isArray(input) && input.length && input[0] && Array.isArray(input[0].ads)
+        ? input
+        : [{ language: 'עברית', ads: input || [] }];
+
+      let globalIndex = 0;
+      const flat = [];
+
+      const sections = groups.map((group) => {
+        const display = LANGUAGE_DISPLAY[group.language] || LANGUAGE_DISPLAY['עברית'];
+
+        if (group.error) {
+          return `<div class="error-msg" style="margin-bottom:16px;">
+            ${display.flag} ${escapeHtml(group.language)} - נכשל: ${escapeHtml(group.error)}
+          </div>`;
+        }
+
+        const cards = group.ads.map((ad) => {
+          const i = globalIndex++;
+          flat.push(ad);
+          return `
+            <div class="ad-card" dir="${display.dir}" style="text-align:${display.dir === 'rtl' ? 'right' : 'left'};">
               <span class="ad-number">מודעה ${i + 1}</span>
               <div class="ad-headline">${escapeHtml(ad.headline)}</div>
               <div class="ad-primary-text">${escapeHtml(ad.primaryText)}</div>
-              <div class="ad-footer">
-                <div>
+              <div class="ad-footer" dir="rtl">
+                <div dir="${display.dir}" style="text-align:${display.dir === 'rtl' ? 'right' : 'left'};">
                   <div class="ad-description">${escapeHtml(ad.description)}</div>
                   <div class="ad-cta">📣 ${escapeHtml(ad.callToAction)}</div>
                 </div>
                 <button class="copy-btn" onclick="copyAd(this, ${i})">העתק</button>
               </div>
-            </div>
-          `).join('')}
+            </div>`;
+        }).join('');
+
+        // כותרת שפה מוצגת רק כשיש יותר מקבוצה אחת
+        const heading = groups.length > 1
+          ? `<div style="margin:24px 0 12px; font-weight:700; font-size:1.05rem;">
+               ${display.flag} ${escapeHtml(group.language)}
+               <span style="font-weight:400; opacity:.6;">(${group.ads.length} מודעות)</span>
+             </div>`
+          : '';
+
+        return heading + `<div class="ads-grid">${cards}</div>`;
+      }).join('');
+
+      resultsEl.innerHTML = `
+        <div class="results-title">✦ המודעות שנוצרו</div>
+        <div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
+          <button class="copy-btn" id="sendTelegramBtn" onclick="sendAdsToTelegram(this)">📱 שלח לטלגרם</button>
         </div>
+        ${sections}
       `;
-      window._adsData = ads;
+      window._adsData = flat;
       resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 

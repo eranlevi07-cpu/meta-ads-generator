@@ -9,14 +9,22 @@ module.exports = async (req, res) => {
   if (guard(req, res, { method: 'POST' })) return;
 
   try {
-    const { brand, businessDescription, goals, audience, budget, tone } = req.body;
+    const { brand, businessDescription, goals, audience, budget, tone, language: requestedLanguage } = req.body;
     const brandInfo = (BRAND_DATA.brands || []).find((b) => b.key === brand);
-    const language = (brandInfo && brandInfo.language) || 'עברית';
-    const isArabic = language.includes('ערבית') || language.includes('عربية');
 
-    const ctaList = isArabic
-      ? '"احجز الآن", "اشترِ الآن", "تواصل معنا", "اشترك الآن", "اطلب عرض سعر", "للمزيد من المعلومات"'
-      : '"למידע נוסף", "הזמן עכשיו", "קנה עכשיו", "הירשם", "צור קשר", "קבל הצעת מחיר"';
+    // סדר עדיפות: שפה שנבחרה בממשק > שפת המותג > עברית
+    const language = requestedLanguage || (brandInfo && brandInfo.language) || 'עברית';
+
+    // רשימת קריאות לפעולה תקניות של Meta, לכל שפה
+    const CTA_BY_LANGUAGE = {
+      עברית: '"למידע נוסף", "הזמן עכשיו", "קנה עכשיו", "הירשם", "צור קשר", "קבל הצעת מחיר"',
+      ערבית: '"احجز الآن", "اشترِ الآن", "تواصل معنا", "اشترك الآن", "اطلب عرض سعر", "للمزيد من المعلومات"',
+      רוסית: '"Узнать больше", "Забронировать", "Купить сейчас", "Зарегистрироваться", "Связаться с нами", "Получить предложение"',
+    };
+
+    const matchedLanguage =
+      Object.keys(CTA_BY_LANGUAGE).find((key) => language.includes(key)) || 'עברית';
+    const ctaList = CTA_BY_LANGUAGE[matchedLanguage];
 
     const prompt = `אתה מומחה לפרסום ברשתות חברתיות ובמיוחד ב-Meta (פייסבוק ואינסטגרם).
 צור 3 מודעות Meta שונות ומגוונות בשפת ה${language} עבור העסק הבא:
@@ -46,6 +54,7 @@ module.exports = async (req, res) => {
 
 הנחיות חשובות:
 - כל המודעות חייבות להיות בשפת ה${language} בלבד - כותרות, טקסט ראשי, תיאור וקריאה לפעולה הכל ב${language}
+- **אלה מודעות מקוריות, לא תרגום.** כתוב אותן כאילו אתה קופירייטר יליד ${language} שכותב לקהל שלו מאפס. השתמש בביטויים, הומור, ניואנסים ונקודות כאב שמדברים דווקא לקהל הזה. מותר ואף רצוי שהזווית תהיה שונה לגמרי ממה שהיית כותב בשפה אחרת.
 - כל מודעה צריכה להיות שונה בגישה ובמסר
 - השתמש ב${language} טבעית, נכונה ומשכנעת מבחינה תרבותית לקהל היעד
 - התאם את הטון שביקשו
@@ -63,7 +72,8 @@ module.exports = async (req, res) => {
     if (!jsonMatch) throw new Error('Invalid JSON response from AI');
 
     const adsData = JSON.parse(jsonMatch[0]);
-    return res.status(200).json(adsData);
+    // מחזירים גם את השפה כדי שהממשק ידע איך להציג (כיוון טקסט, כותרת קבוצה)
+    return res.status(200).json({ ...adsData, language: matchedLanguage });
   } catch (error) {
     console.error('Error ads-ai:', error);
     return res.status(500).json({ error: error.message || 'Internal server error' });
