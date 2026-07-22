@@ -1,13 +1,14 @@
-function setCors(res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-}
+const { guard } = require('./_guard');
 
 // קריאה ישירה לפונקציה במקום HTTP פנימי
 async function callHandler(handler, body) {
   return new Promise((resolve, reject) => {
-    const req = { method: 'POST', body, headers: { 'content-type': 'application/json' } };
+    // הקריאה הפנימית עוברת את אותה בדיקת סיסמה, לכן מצרפים את המפתח מהשרת
+    const req = {
+      method: 'POST',
+      body,
+      headers: { 'content-type': 'application/json', 'x-app-key': process.env.APP_ACCESS_KEY },
+    };
     const res = {
       _status: 200,
       status(code) { this._status = code; return this; },
@@ -30,10 +31,7 @@ const googleSaveHandler = require('./google-save');
 const telegramHandler = require('./telegram-approval');
 
 module.exports = async (req, res) => {
-  setCors(res);
-
-  if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (guard(req, res, { method: 'POST' })) return;
 
   try {
     const { brand, businessDescription, goals, audience, budget, tone, groupInfo, contentType, imagePrompt, imageStyle, rewriteText } = req.body;

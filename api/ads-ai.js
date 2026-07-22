@@ -3,17 +3,10 @@ const BRAND_DATA = require('../brand-data.json');
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-function setCors(res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-}
+const { guard } = require('./_guard');
 
 module.exports = async (req, res) => {
-  setCors(res);
-
-  if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (guard(req, res, { method: 'POST' })) return;
 
   try {
     const { brand, businessDescription, goals, audience, budget, tone } = req.body;
@@ -60,7 +53,7 @@ module.exports = async (req, res) => {
 - קריאה לפעולה חייבת להיות אחת מאלה (ב${language}): ${ctaList}`;
 
     const message = await client.messages.create({
-      model: 'claude-sonnet-4-6',
+      model: 'claude-opus-4-8',
       max_tokens: 2000,
       messages: [{ role: 'user', content: prompt }],
     });

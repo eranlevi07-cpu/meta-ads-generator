@@ -1,1 +1,12 @@
-node_modules/ 
+node_modules/
+
+# קבצים שעלולים להכיל מפתחות - לעולם לא לעלות לגיטהאב
+*.txt
+.env
+.env.*
+*service-account*.json
+*credentials*.json
+.vercel
+
+# קבצי סודות אישיים - לא לעלות
+"ערן - בניה חדשה.md"

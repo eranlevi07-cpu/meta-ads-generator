@@ -1013,6 +1013,49 @@
   </div>
 
   <script>
+    // ===== שער גישה: סיסמה אחת שנשמרת בדפדפן ונשלחת עם כל קריאה ל-API =====
+    const APP_KEY_STORAGE = 'mag_app_key';
+
+    function getAppKey() {
+      return localStorage.getItem(APP_KEY_STORAGE) || '';
+    }
+
+    function askForAppKey(message) {
+      const entered = window.prompt(message || 'הזן את סיסמת הגישה למחולל המודעות:', '');
+      if (entered && entered.trim()) {
+        localStorage.setItem(APP_KEY_STORAGE, entered.trim());
+        return true;
+      }
+      return false;
+    }
+
+    if (!getAppKey()) askForAppKey();
+
+    // עוטף את fetch כך שכל קריאה ל-/api/ נושאת את הסיסמה אוטומטית.
+    // כך אין צורך לגעת ב-12 מקומות הקריאה בקוד.
+    const _originalFetch = window.fetch.bind(window);
+    window.fetch = async (input, init = {}) => {
+      const url = typeof input === 'string' ? input : (input && input.url) || '';
+      if (!url.startsWith('/api/')) return _originalFetch(input, init);
+
+      const withKey = {
+        ...init,
+        headers: { ...(init.headers || {}), 'X-App-Key': getAppKey() },
+      };
+      const res = await _originalFetch(input, withKey);
+
+      if (res.status === 401) {
+        localStorage.removeItem(APP_KEY_STORAGE);
+        if (askForAppKey('הסיסמה שגויה. נסה שוב:')) {
+          return _originalFetch(input, {
+            ...init,
+            headers: { ...(init.headers || {}), 'X-App-Key': getAppKey() },
+          });
+        }
+      }
+      return res;
+    };
+
     // Chips toggle
     document.querySelectorAll('.chips').forEach(group => {
       group.querySelectorAll('.chip').forEach(chip => {
