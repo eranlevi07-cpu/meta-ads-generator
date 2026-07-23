@@ -423,11 +423,12 @@
       object-fit: contain;
     }
 
+    /* !important כדי לגבור על צבע הרקע ה-inline של אווטאר-האות */
     .brand-icon.active,
     .brand-icon:hover {
-      background: rgba(124,58,237,0.43);
+      background: rgba(124,58,237,0.43) !important;
       border-color: var(--accent);
-      color: #fff;
+      color: #fff !important;
       box-shadow: 0 0 12px rgba(124,58,237,0.45);
     }
 
@@ -1042,6 +1043,22 @@
     <div id="hrResults"></div>
     <div id="rewriteResults"></div>
     <div id="imageResults"></div>
+
+    <div class="form-card" style="margin-top: 30px;">
+      <h2 style="margin-bottom: 6px; color:#a78bfa; font-size: 22px;">📚 השמורים שלי</h2>
+      <div style="opacity:.7; margin-bottom:14px;">כל מה שיצרת ושמרת - זמין לצפייה, שכפול ומחיקה</div>
+      <div style="display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap;">
+        <select id="libraryFilter" style="max-width:220px;">
+          <option value="">הכל</option>
+          <option value="ads">מודעות</option>
+          <option value="hr">תוכן רווחה</option>
+          <option value="rewrite">ניסוחים</option>
+          <option value="image">תמונות</option>
+        </select>
+        <button class="copy-btn" onclick="loadLibrary()">🔄 רענן</button>
+      </div>
+      <div id="libraryList" style="opacity:.7;">לחץ "רענן" כדי לטעון את הפריטים השמורים</div>
+    </div>
   </div>
 
   <script>
@@ -1088,6 +1105,125 @@
       return res;
     };
 
+    // ===== דאטהבייס: שמירה, טעינה, שכפול ומחיקה של תוכן =====
+    const TYPE_LABELS = { ads: '📢 מודעות', hr: '📝 תוכן רווחה', rewrite: '✍️ ניסוחים', image: '🖼️ תמונות' };
+
+    async function dbCall(body) {
+      const res = await fetch('/api/db', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'שגיאת דאטהבייס');
+      return data;
+    }
+
+    async function saveToLibrary(btn, itemType, payload, images) {
+      const brand = document.getElementById('brandSelect').value;
+      const title = prompt('שם לפריט (כדי שתמצא אותו אחר כך):',
+        (document.getElementById('businessDescription').value || '').slice(0, 40));
+      if (title === null) return; // ביטול
+
+      const original = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = 'שומר...';
+      try {
+        await dbCall({ action: 'save', itemType, brand, title: title.trim(), payload, images: images || [] });
+        btn.textContent = 'נשמר ✓';
+        setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 2000);
+      } catch (err) {
+        alert('שגיאה בשמירה: ' + err.message);
+        btn.textContent = original;
+        btn.disabled = false;
+      }
+    }
+
+    async function loadLibrary() {
+      const listEl = document.getElementById('libraryList');
+      listEl.style.opacity = '1';
+      listEl.innerHTML = 'טוען...';
+      try {
+        const filter = document.getElementById('libraryFilter').value;
+        const { items } = await dbCall({ action: 'list', itemType: filter || undefined });
+
+        if (!items.length) {
+          listEl.innerHTML = '<div style="opacity:.7;">אין פריטים שמורים עדיין. צור תוכן ולחץ "💾 שמור".</div>';
+          return;
+        }
+
+        listEl.innerHTML = items.map((it) => `
+          <div style="display:flex; align-items:center; gap:10px; padding:10px 12px; border:1px solid rgba(109,40,217,.15); border-radius:10px; margin-bottom:8px; flex-wrap:wrap;">
+            ${it.imageUrls && it.imageUrls[0] ? `<img src="${it.imageUrls[0]}" style="width:44px;height:44px;border-radius:8px;object-fit:cover;" />` : ''}
+            <div style="flex:1; min-width:180px;">
+              <div style="font-weight:600;">${escapeHtml(it.title || 'ללא כותרת')}</div>
+              <div style="font-size:.82rem; opacity:.65;">
+                ${TYPE_LABELS[it.itemType] || it.itemType} · ${escapeHtml(it.brand || '')} · ${new Date(it.createdAt).toLocaleDateString('he-IL')}
+              </div>
+            </div>
+            <button class="copy-btn" onclick="openLibraryItem('${it.id}')">👁️ פתח</button>
+            <button class="copy-btn" onclick="duplicateLibraryItem('${it.id}', this)">📋 שכפל</button>
+            <button class="copy-btn" onclick="deleteLibraryItem('${it.id}', this)" style="color:#dc2626;">🗑️ מחק</button>
+          </div>
+        `).join('');
+      } catch (err) {
+        listEl.innerHTML = `<div class="error-msg">שגיאה: ${escapeHtml(err.message)}</div>`;
+      }
+    }
+
+    async function openLibraryItem(id) {
+      try {
+        const item = await dbCall({ action: 'get', id });
+        // שחזור למסך לפי הסוג - משתמש באותן פונקציות תצוגה של תוכן חדש
+        if (item.itemType === 'ads') {
+          renderAds(item.payload);
+        } else if (item.itemType === 'image') {
+          window._generatedImages = item.imageUrls || [];
+          window._editLabels = {};
+          renderImage();
+        } else {
+          // hr / rewrite - תצוגה גנרית פשוטה בתוך אזור התוצאות
+          const target = document.getElementById(item.itemType === 'hr' ? 'hrResults' : 'rewriteResults');
+          const entries = Array.isArray(item.payload) ? item.payload : [item.payload];
+          target.innerHTML = `
+            <div class="results-title">✦ ${escapeHtml(item.title || 'פריט שמור')}</div>
+            <div class="ads-grid">
+              ${entries.map((e) => `
+                <div class="ad-card"><div class="ad-primary-text">${escapeHtml(
+                  typeof e === 'string' ? e : (e.content || e.text || JSON.stringify(e))
+                )}</div></div>
+              `).join('')}
+            </div>`;
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      } catch (err) {
+        alert('שגיאה בפתיחה: ' + err.message);
+      }
+    }
+
+    async function duplicateLibraryItem(id, btn) {
+      btn.disabled = true;
+      try {
+        await dbCall({ action: 'duplicate', id });
+        await loadLibrary();
+      } catch (err) {
+        alert('שגיאה בשכפול: ' + err.message);
+        btn.disabled = false;
+      }
+    }
+
+    async function deleteLibraryItem(id, btn) {
+      if (!confirm('למחוק את הפריט? אי אפשר לשחזר.')) return;
+      btn.disabled = true;
+      try {
+        await dbCall({ action: 'delete', id });
+        await loadLibrary();
+      } catch (err) {
+        alert('שגיאה במחיקה: ' + err.message);
+        btn.disabled = false;
+      }
+    }
+
     // Chips toggle
     document.querySelectorAll('.chips').forEach(group => {
       group.querySelectorAll('.chip').forEach(chip => {
@@ -1102,6 +1238,31 @@
       if (brandProfiles[brandKey]) {
         desc.value = brandProfiles[brandKey];
       }
+    }
+
+    // אווטאר-אות: עיגול צבעוני עם ראשי התיבות של המותג, במקום לוגו חיצוני
+    // שעלול להישבר. הצבע יציב לכל מותג (מחושב מהשם), כמו ב-Gmail/Slack.
+    const AVATAR_COLORS = [
+      '#7c3aed', '#db2777', '#0891b2', '#16a34a',
+      '#ea580c', '#2563eb', '#ca8a04', '#dc2626',
+    ];
+
+    function initials(name) {
+      const words = String(name || '').trim().split(/\s+/).filter(Boolean);
+      if (!words.length) return '?';
+      if (words.length === 1) return words[0].substring(0, 2);
+      return (words[0][0] + words[1][0]);
+    }
+
+    function applyLetterAvatar(btn, name) {
+      btn.innerHTML = '';
+      let hash = 0;
+      for (const ch of String(name || '')) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
+      const color = AVATAR_COLORS[hash % AVATAR_COLORS.length];
+      btn.style.background = color;
+      btn.style.color = '#fff';
+      btn.style.fontSize = '15px';
+      btn.textContent = initials(name).toUpperCase();
     }
 
     async function loadBrandIcons() {
@@ -1127,13 +1288,17 @@
           btn.dataset.brand = brand.key;
           btn.title = brand.name;
 
-          if (brand.logo) {
+          if (brand.key === 'other') {
+            btn.textContent = '+';
+          } else if (brand.logo) {
+            // אם יש לוגו - מנסים אותו, ואם הוא נשבר (404 וכו') נופלים לאווטאר-אות
             const img = document.createElement('img');
             img.src = brand.logo;
             img.alt = brand.name;
+            img.onerror = () => { applyLetterAvatar(btn, brand.name); };
             btn.appendChild(img);
           } else {
-            btn.textContent = brand.key === 'other' ? '+' : brand.name.substring(0, 2).toUpperCase();
+            applyLetterAvatar(btn, brand.name);
           }
 
           btn.addEventListener('click', () => {
@@ -1349,10 +1514,12 @@
         <div class="results-title">✦ המודעות שנוצרו</div>
         <div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
           <button class="copy-btn" id="sendTelegramBtn" onclick="sendAdsToTelegram(this)">📱 שלח לטלגרם</button>
+          <button class="copy-btn" onclick="saveToLibrary(this, 'ads', window._adsGroups || window._adsData)">💾 שמור בספרייה</button>
         </div>
         ${sections}
       `;
       window._adsData = flat;
+      window._adsGroups = groups;  // המבנה המלא לפי שפות - לשמירה בספרייה
       resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
@@ -1441,6 +1608,7 @@
         <div class="results-title">✦ תוכן HR שנוצר</div>
         <div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
           <button class="copy-btn" id="sendHrTelegramBtn" onclick="sendHrToTelegram(this)">📱 שלח לטלגרם</button>
+          <button class="copy-btn" onclick="saveToLibrary(this, 'hr', window._hrItems || [])">💾 שמור בספרייה</button>
         </div>
         <div class="ads-grid">
           ${items.map((item, i) => `
@@ -1553,6 +1721,7 @@
         <div class="results-title">✦ ניסוחים שנוצרו</div>
         <div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
           <button class="copy-btn" id="sendRewriteTelegramBtn" onclick="sendRewritesToTelegram(this)">📱 שלח לטלגרם</button>
+          <button class="copy-btn" onclick="saveToLibrary(this, 'rewrite', window._rewrites || [])">💾 שמור בספרייה</button>
         </div>
         <div class="ads-grid">
           ${rewrites.map((rw, i) => `
@@ -1746,6 +1915,7 @@
         <div class="results-title">✦ תמונות שנוצרו</div>
         <div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
           <button class="copy-btn" id="sendImageTelegramBtn" onclick="sendImagesToTelegram(this)">📱 שלח תמונה לטלגרם</button>
+          <button class="copy-btn" onclick="saveToLibrary(this, 'image', { source: 'image-generator' }, window._generatedImages)">💾 שמור בספרייה</button>
         </div>
         <div class="ads-grid">
           ${images.map((src, i) => `
