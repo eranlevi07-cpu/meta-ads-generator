@@ -1,11 +1,20 @@
 // חיבור יחיד ל-Firebase (Firestore + Storage), משותף לכל הפונקציות.
 // המפתח מגיע ממשתנה סביבה FIREBASE_SERVICE_ACCOUNT_JSON (תוכן קובץ ה-JSON כמו שהוא).
-const admin = require('firebase-admin');
+// כתיבה מודולרית - חובה ב-firebase-admin v14 (הכתיבה הישנה admin.credential הוסרה).
+const { initializeApp, cert, getApps } = require('firebase-admin/app');
+const { getFirestore } = require('firebase-admin/firestore');
+const { getStorage } = require('firebase-admin/storage');
 
 let app = null;
 
 function getFirebase() {
   if (app) return app;
+  // ב-serverless אותו תהליך יכול לשרוד בין קריאות - לא לאתחל פעמיים
+  const existing = getApps();
+  if (existing.length) {
+    app = existing[0];
+    return app;
+  }
 
   const raw = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
   if (!raw) {
@@ -24,8 +33,8 @@ function getFirebase() {
     creds.private_key = creds.private_key.replace(/\\n/g, '\n');
   }
 
-  app = admin.initializeApp({
-    credential: admin.credential.cert(creds),
+  app = initializeApp({
+    credential: cert(creds),
     storageBucket: process.env.FIREBASE_STORAGE_BUCKET || `${creds.project_id}.firebasestorage.app`,
   });
 
@@ -33,13 +42,11 @@ function getFirebase() {
 }
 
 function getDb() {
-  getFirebase();
-  return admin.firestore();
+  return getFirestore(getFirebase());
 }
 
 function getBucket() {
-  getFirebase();
-  return admin.storage().bucket();
+  return getStorage(getFirebase()).bucket();
 }
 
 module.exports = { getDb, getBucket };
